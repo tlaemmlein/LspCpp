@@ -56,32 +56,6 @@ endfunction()
 set(LSPCPP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_if_not_defined(LSPCPP_THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
-macro(lspcpp_set_target_options_with_nuget_pkg target id version)
-    if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
-        if(EXISTS ${CMAKE_BINARY_DIR}/packages/${id}.${version}/build/${id}.targets)
-            target_link_libraries(${target} PRIVATE ${CMAKE_BINARY_DIR}/packages/${id}.${version}/build/${id}.targets)
-        elseif(EXISTS ${CMAKE_BINARY_DIR}/packages/${id}.${version}/build/native/${id}.targets)
-            target_link_libraries(${target} PRIVATE ${CMAKE_BINARY_DIR}/packages/${id}.${version}/build/native/${id}.targets)
-        else()
-            message(FATAL_ERROR "Can't find target of ${id}.${version}")
-        endif()
-    else()
-        message(FATAL_ERROR "NUGET package only use in Visual Studio")
-    endif()
-
-endmacro()
-
-macro(INSTALL_NUGET id version)
-    if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
-        unset(nuget_cmd)
-        list(APPEND nuget_cmd install ${id} -Prerelease -Version ${version} -OutputDirectory ${CMAKE_BINARY_DIR}/packages)
-        message("excute nuget install:${nuget_cmd}")
-        execute_process(COMMAND nuget ${nuget_cmd} ENCODING AUTO)
-    else()
-        message(FATAL_ERROR "INSTALL_NUGET only use in Visual Studio")
-    endif()
-
-endmacro()
 ###########################################################
 # Functions
 ###########################################################
@@ -93,16 +67,6 @@ function(lspcpp_set_target_options target)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD 14)
 
     set_property(TARGET ${target} PROPERTY CXX_EXTENSIONS OFF)
-
-    if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_chrono-vc141 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_date_time-vc141 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_filesystem-vc141 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_program_options-vc141 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_system-vc141 1.76.0.0)
-        lspcpp_set_target_options_with_nuget_pkg(${target} boost_thread-vc141 1.76.0.0)
-    endif()
 
     # Enable all warnings
     if(MSVC)
@@ -166,23 +130,12 @@ add_subdirectory(third_party/uri)
 ###########################################################
 # boost library
 ###########################################################
-if (CMAKE_GENERATOR MATCHES "Visual Studio.*")
-    INSTALL_NUGET(boost 1.76.0.0)
-    INSTALL_NUGET(boost_chrono-vc141 1.76.0.0)
-    INSTALL_NUGET(boost_date_time-vc141 1.76.0.0)
-    INSTALL_NUGET(boost_filesystem-vc141 1.76.0.0)
-    INSTALL_NUGET(boost_program_options-vc141 1.76.0.0)
-    INSTALL_NUGET(boost_system-vc141 1.76.0.0)
-    INSTALL_NUGET(boost_thread-vc141 1.76.0.0)
-else()
-
-    find_package(Boost COMPONENTS date_time  chrono filesystem system thread program_options)
-    if(NOT Boost_FOUND)
-        if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-            message(FATAL_ERROR "Can't find boost,lease build boost and install it or install boost with : brew install boost")
-        elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-            message(FATAL_ERROR "Can't find boost,please build boost and install it. or install boost with : sudo apt-get install libboost-dev")
-        endif()
+find_package(Boost COMPONENTS date_time  chrono filesystem system thread program_options)
+if(NOT Boost_FOUND)
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        message(FATAL_ERROR "Can't find boost,lease build boost and install it or install boost with : brew install boost")
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        message(FATAL_ERROR "Can't find boost,please build boost and install it. or install boost with : sudo apt-get install libboost-dev")
     endif()
 endif()
 
