@@ -121,21 +121,30 @@ endfunction()
 
 # Libraries
 
-if (MSVC)
-    set(Uri_USE_STATIC_CRT OFF)
-endif()
 set(Uri_BUILD_TESTS OFF)
 add_subdirectory(third_party/uri)
 
 ###########################################################
 # boost library
 ###########################################################
-find_package(Boost COMPONENTS date_time  chrono filesystem system thread program_options)
+message("Start finding boost...")
+if (MSVC)
+    message(status "Uri_USE_STATIC_CRT = ${Uri_USE_STATIC_CRT}")
+    cmake_policy(SET CMP0091 NEW)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(Boost_USE_STATIC_RUNTIME ON)
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_MULTITHREADED ON)
+endif()
+set(Boost_LIBRARIES date_time chrono filesystem system thread program_options)
+find_package(Boost COMPONENTS ${Boost_LIBRARIES})
 if(NOT Boost_FOUND)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         message(FATAL_ERROR "Can't find boost,lease build boost and install it or install boost with : brew install boost")
     elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         message(FATAL_ERROR "Can't find boost,please build boost and install it. or install boost with : sudo apt-get install libboost-dev")
+    else()
+        message(FATAL_ERROR "Can't find boost,please set BOOST_ROOT, e.g. -DBOOST_ROOT=<Your Path to Boost>")
     endif()
 endif()
 
@@ -173,7 +182,6 @@ add_library(lspcpp STATIC)
 target_include_directories(lspcpp
         PUBLIC
             ${LSPCPP_INCLUDE_DIR}
-            ${Boost_INCLUDE_DIRS}
             ${RapidJSON_INCLUDE_DIRS}
             ${Uri_SOURCE_DIR}/include
         )
