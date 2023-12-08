@@ -129,7 +129,7 @@ add_subdirectory(third_party/uri)
 ###########################################################
 message("Start finding boost...")
 if (MSVC)
-    message(status "Uri_USE_STATIC_CRT = ${Uri_USE_STATIC_CRT}")
+    message("Uri_USE_STATIC_CRT = ${Uri_USE_STATIC_CRT}")
     cmake_policy(SET CMP0091 NEW)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(Boost_USE_STATIC_RUNTIME ON)
@@ -181,9 +181,17 @@ add_library(lspcpp STATIC)
 ### Includes
 target_include_directories(lspcpp
         PUBLIC
-            ${LSPCPP_INCLUDE_DIR}
-            ${RapidJSON_INCLUDE_DIRS}
-            ${Uri_SOURCE_DIR}/include
+#Problem: Target "lspcpp" INTERFACE_INCLUDE_DIRECTORIES property contains path: ...  which is prefixed in the source directory.       
+#Fix: https://stackoverflow.com/questions/25676277/cmake-target-include-directories-prints-an-error-when-i-try-to-add-the-source
+            $<BUILD_INTERFACE:${LSPCPP_INCLUDE_DIR}>  
+            $<INSTALL_INTERFACE:include/LibLsp> 
+
+            $<BUILD_INTERFACE:${LSPCPP_THIRD_PARTY_DIR}/rapidjson/include>  
+            $<INSTALL_INTERFACE:${RapidJSON_INCLUDE_DIRS}>
+
+            $<BUILD_INTERFACE:${Uri_SOURCE_DIR}/include>  
+            $<INSTALL_INTERFACE:third_party/uri/include>
+            
         )
 
 target_link_libraries(lspcpp PUBLIC network-uri  ${Boost_LIBRARIES})
@@ -252,8 +260,9 @@ if(LSPCPP_INSTALL)
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
             USE_SOURCE_PERMISSIONS
             )
-
-    install(TARGETS lspcpp
+#Problem: CMake Error: install(EXPORT "lspcpp-targets" ...) includes target "lspcpp" which requires target "network-uri" that is not in any export set.
+#Fix: https://stackoverflow.com/questions/5378528/install-export-problem-for-library-with-dependencies
+    install(TARGETS lspcpp network-uri
             EXPORT lspcpp-targets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
